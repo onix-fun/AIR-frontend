@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/infra/store";
+import { accountAppUrl } from "@/infra/navigation/accountApp";
 
 const route = useRoute();
 const router = useRouter();
@@ -30,9 +31,7 @@ const displayInitials = computed(() => {
 
 const profileUrl = computed(() => {
     const currentUrl = encodeURIComponent(window.location.origin + window.location.pathname);
-    // Assuming profile frontend runs on port 5174 in dev, or relative path in production
-    // You can adjust this to use an environment variable if needed.
-    const baseUrl = import.meta.env.DEV ? "http://localhost:5174" : "/profile/";
+    const baseUrl = accountAppUrl();
     return `${baseUrl}/?redirect=${currentUrl}`;
 });
 </script>

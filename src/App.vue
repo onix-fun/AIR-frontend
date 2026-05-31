@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import { useAuthStore, useDeviceStore, useTemplateStore, useAnalyticsStore } from "@/infra/store";
 import AppLayout from "@/infra/navigation/layouts/AppLayout.vue";
+import { accountAppUrl } from "@/infra/navigation/accountApp";
 
 const authStore = useAuthStore();
 const deviceStore = useDeviceStore();
@@ -28,7 +29,7 @@ onMounted(async () => {
         // Prevent infinite redirect loops by checking if we already tried to redirect.
         // If not authenticated, we MUST go to profile login.
         const currentUrl = encodeURIComponent(window.location.origin + window.location.pathname);
-        const baseUrl = import.meta.env.DEV ? "http://localhost:5174" : "/profile/";
+        const baseUrl = accountAppUrl();
         window.location.href = `${baseUrl}?redirect=${currentUrl}`;
         return;
     }

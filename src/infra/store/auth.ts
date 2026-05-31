@@ -36,8 +36,8 @@ export const useAuthStore = defineStore("auth", () => {
 
   const switchAccount = async (userId: string) => {
     sessions.value = [];
-    AuthService.switchAccount(userId);
-    await initAuth();
+    currentUser.value = await AuthService.switchAccount(userId);
+    syncAccounts();
     if (currentUser.value) await fetchSessions();
   };
 
@@ -139,17 +139,15 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const logout = async () => {
-    await AuthService.logout();
+    currentUser.value = await AuthService.logout();
     sessions.value = [];
-    currentUser.value = AuthService.getStoredSession();
     syncAccounts();
     if (currentUser.value) await fetchSessions();
   };
 
   const logoutAll = async () => {
-    await AuthService.logoutAll();
+    currentUser.value = await AuthService.logoutAll();
     sessions.value = [];
-    currentUser.value = AuthService.getStoredSession();
     syncAccounts();
     if (currentUser.value) await fetchSessions();
   };
