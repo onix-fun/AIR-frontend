@@ -30,7 +30,7 @@ export interface DeviceView {
   templateName: string;
   metadata: TemplateMetadata;
   createdAt: string;
-  state: "online" | "idle" | "warning" | "offline";
+  state: "recent" | "idle" | "no-data";
   lastEvent?: string;
   role: ConsumerRole;
   methods: MethodResponse[];

@@ -70,7 +70,7 @@ function rememberUser(user: User): User {
 export interface UserPublicDto {
   id: string;
   username: string;
-  email: string;
+  email?: string;
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
@@ -86,6 +86,11 @@ export class AuthService {
 
   static async searchUsers(query: string): Promise<UserPublicDto[]> {
     const response = await profileClient.get<UserPublicDto[]>("/search/search", { params: { q: query } });
+    return response.data;
+  }
+
+  static async getUser(id: string): Promise<UserPublicDto> {
+    const response = await profileClient.get<UserPublicDto>(`/users/${id}`);
     return response.data;
   }
 

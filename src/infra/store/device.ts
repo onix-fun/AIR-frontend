@@ -47,7 +47,7 @@ export const useDeviceStore = defineStore("device", () => {
         try {
           const response = await AnalyticsService.getEvents({ consumerId: consumer.id, limit: 1 });
           const [latest] = response.events;
-          if (latest) lastEventsByConsumer.value[consumer.id] = latest.action;
+          if (latest) lastEventsByConsumer.value[consumer.id] = latest.occurred_at;
         } catch {
           lastEventsByConsumer.value[consumer.id] = "";
         }
@@ -63,6 +63,7 @@ export const useDeviceStore = defineStore("device", () => {
           const metadata = parseTemplateInfo(template?.info);
           const methods = methodsByTemplate[consumer.templateId] || [];
           const lastEvent = lastEventsByConsumer.value[consumer.id];
+          const lastEventAge = lastEvent ? Date.now() - new Date(lastEvent).getTime() : Number.POSITIVE_INFINITY;
           return {
             id: consumer.id,
             name: consumer.displayName || metadata.displayName || `${templateDisplayName(template)} ${consumer.id.slice(0, 8)}`,
@@ -70,7 +71,7 @@ export const useDeviceStore = defineStore("device", () => {
             templateName: templateDisplayName(template),
             metadata,
             createdAt: consumer.createdAt,
-            state: lastEvent ? "online" : "idle",
+            state: !lastEvent ? "no-data" : lastEventAge <= 15 * 60_000 ? "recent" : "idle",
             lastEvent,
             role: "OWNER",
             methods,

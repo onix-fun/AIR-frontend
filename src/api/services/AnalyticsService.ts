@@ -36,6 +36,13 @@ export interface TimeSeriesPointResponse {
   count: number;
 }
 
+export interface ValueSeriesPointResponse {
+  bucket: string;
+  avg: number;
+  min: number;
+  max: number;
+}
+
 export interface AnalyticsQuery {
   consumerId?: string;
   methodName?: string;
@@ -45,6 +52,15 @@ export interface AnalyticsQuery {
   to?: string;
   limit?: number;
   cursor?: string;
+  bucket?: 'minute' | 'hour' | 'day';
+}
+
+export interface ValueSeriesQuery {
+  consumerId: string;
+  variableName: string;
+  valuePath?: string;
+  from?: string;
+  to?: string;
   bucket?: 'minute' | 'hour' | 'day';
 }
 
@@ -70,6 +86,14 @@ export class AnalyticsService {
   static async getTimeseries(query: AnalyticsQuery): Promise<TimeSeriesPointResponse[]> {
     const response = await analyticsClient.get<{ items?: TimeSeriesPointResponse[]; points: TimeSeriesPointResponse[] }>(
       '/aggregates/timeseries',
+      { params: query },
+    );
+    return response.data.items || response.data.points;
+  }
+
+  static async getValueSeries(query: ValueSeriesQuery): Promise<ValueSeriesPointResponse[]> {
+    const response = await analyticsClient.get<{ items?: ValueSeriesPointResponse[]; points: ValueSeriesPointResponse[] }>(
+      '/aggregates/values',
       { params: query },
     );
     return response.data.items || response.data.points;

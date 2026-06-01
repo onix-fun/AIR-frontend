@@ -4,6 +4,8 @@ import type {
   CreateConsumerPayload,
   CreateConsumerResponse,
   RegenerateTokenResponse,
+  CollaboratorsResponse,
+  ConsumerRole,
 } from "@/domain";
 
 export class DeviceService {
@@ -28,5 +30,14 @@ export class DeviceService {
 
   static async grantAccess(consumerId: string, clientId: string, role: string): Promise<void> {
     await domainClient.put(`/consumers/${consumerId}/collaborators/${clientId}`, { role });
+  }
+
+  static async getCollaborators(consumerId: string): Promise<CollaboratorsResponse<ConsumerRole>> {
+    const response = await domainClient.get<CollaboratorsResponse<ConsumerRole>>(`/consumers/${consumerId}/collaborators`);
+    return response.data;
+  }
+
+  static async removeCollaborator(consumerId: string, clientId: string): Promise<void> {
+    await domainClient.delete(`/consumers/${consumerId}/collaborators/${clientId}`);
   }
 }

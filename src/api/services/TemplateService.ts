@@ -9,6 +9,8 @@ import type {
   TemplateState,
   UpdateTemplatePayload,
   VariableResponse,
+  CollaboratorsResponse,
+  TemplateRole,
 } from "@/domain";
 
 export class TemplateService {
@@ -73,5 +75,16 @@ export class TemplateService {
 
   static async grantAccess(templateId: string, clientId: string, role: string): Promise<void> {
     await domainClient.put(`/templates/${templateId}/collaborators/${clientId}`, { role });
+  }
+
+  static async getCollaborators(templateId: string): Promise<CollaboratorsResponse<TemplateRole> & { canEdit: boolean }> {
+    const response = await domainClient.get<CollaboratorsResponse<TemplateRole> & { canEdit: boolean }>(
+      `/templates/${templateId}/collaborators`,
+    );
+    return response.data;
+  }
+
+  static async removeCollaborator(templateId: string, clientId: string): Promise<void> {
+    await domainClient.delete(`/templates/${templateId}/collaborators/${clientId}`);
   }
 }
