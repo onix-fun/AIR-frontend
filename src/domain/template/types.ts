@@ -1,7 +1,6 @@
 export type TemplateState = 'DRAFT' | 'PUBLIC' | 'ARCHIVED';
-export type ContractDirection = 'READ' | 'WRITE' | 'READ_WRITE';
 export type DomainType =
-  | 'STATUS'
+  | 'VOID'
   | 'TEXT'
   | 'INTEGER'
   | 'FLOAT'
@@ -37,13 +36,11 @@ export interface VariableResponse {
   description?: string | null;
 }
 
-export interface ContractResponse {
+export interface MethodResponse {
   id: string;
   templateId: string;
   name: string;
-  direction: ContractDirection;
   input: DomainType;
-  output: DomainType;
   description?: string | null;
 }
 
@@ -64,11 +61,9 @@ export interface CreateVariablePayload {
   description?: string | null;
 }
 
-export interface CreateContractPayload {
+export interface CreateMethodPayload {
   name: string;
-  direction: ContractDirection;
   input: DomainType;
-  output: DomainType;
   description?: string | null;
 }
 
@@ -81,12 +76,10 @@ export interface CommandField {
   type: DomainType;
 }
 
-export interface CommandContract {
+export interface CommandMethod {
   id: string;
   name: string;
-  direction: ContractDirection;
   input: DomainType;
-  output: DomainType;
   description?: string | null;
   fields: CommandField[];
 }
@@ -106,12 +99,12 @@ export function templateDisplayName(template: TemplateResponse | undefined): str
   return parseTemplateInfo(template.info).displayName || template.name;
 }
 
-export function contractFields(contract: ContractResponse): CommandField[] {
-  if (contract.input === 'JSON') {
-    return [{ name: 'payload', type: 'JSON' }];
+export function methodFields(method: MethodResponse): CommandField[] {
+  if (method.input === 'JSON') {
+    return [{ name: 'input', type: 'JSON' }];
   }
-  if (contract.input === 'STATUS') {
+  if (method.input === 'VOID') {
     return [];
   }
-  return [{ name: 'value', type: contract.input }];
+  return [{ name: 'value', type: method.input }];
 }

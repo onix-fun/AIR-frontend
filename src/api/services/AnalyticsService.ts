@@ -11,8 +11,10 @@ export interface AnalyticsEventResponse {
   connection_id?: string | null;
   request_id?: string | null;
   consumer_id: string;
-  contract_name: string;
+  method_name?: string | null;
+  variable_name?: string | null;
   status?: string | null;
+  status_code?: number | null;
   error_code?: string | null;
   error_message?: string | null;
   payload?: unknown;
@@ -36,7 +38,8 @@ export interface TimeSeriesPointResponse {
 
 export interface AnalyticsQuery {
   consumerId?: string;
-  contractName?: string;
+  methodName?: string;
+  variableName?: string;
   action?: string;
   from?: string;
   to?: string;

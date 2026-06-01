@@ -5,14 +5,14 @@ export interface WriteCommand {
   type?: "command";
   request_id: string;
   consumer_id: string;
-  contract_name: string;
-  payload: unknown;
+  method_name: string;
+  input?: unknown;
 }
 
 export interface ReadSubscription {
   type?: "subscribe" | "unsubscribe";
   consumer_id: string;
-  contracts: string[];
+  variables: string[];
 }
 
 type MessageHandler = (message: LiveEvent) => void;

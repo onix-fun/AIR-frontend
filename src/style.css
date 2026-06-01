@@ -477,8 +477,8 @@ label.field {
   align-items: center;
 }
 
-.contract-edit-row {
-  grid-template-columns: minmax(120px, 1.2fr) 130px 120px 120px minmax(150px, 1fr) auto auto;
+.method-edit-row {
+  grid-template-columns: minmax(120px, 1.2fr) 120px minmax(150px, 1fr) auto auto;
 }
 
 .filters-grid {

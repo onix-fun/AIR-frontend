@@ -4,8 +4,8 @@ import { useRoute, useRouter } from "vue-router";
 import { ContactsSocket } from "@/api/services/ContactsService";
 import { apiErrorMessage } from "@/api/client";
 import { useAnalyticsStore, useDeviceStore, useTemplateStore } from "@/infra/store";
-import { toCommandContracts } from "@/domain";
-import type { CommandContract, DomainType, LiveEvent, VariableResponse } from "@/domain";
+import { toCommandMethods } from "@/domain";
+import type { CommandMethod, DomainType, LiveEvent, VariableResponse } from "@/domain";
 import { AuthService } from "@/api/services/AuthService";
 import { DeviceService } from "@/api/services/DeviceService";
 
@@ -23,19 +23,17 @@ const commandError = ref("");
 let socket: ContactsSocket | null = null;
 
 const consumerId = computed(() => route.params.id as string);
-const devices = computed(() => deviceStore.deviceViews(templateStore.templates, templateStore.contractsByTemplate));
+const devices = computed(() => deviceStore.deviceViews(templateStore.templates, templateStore.methodsByTemplate));
 const device = computed(() => devices.value.find((item) => item.id === consumerId.value));
-const contracts = computed<CommandContract[]>(() => toCommandContracts(device.value?.contracts || []));
-const commandContracts = computed(() =>
-    contracts.value.filter((contract) => contract.direction === "WRITE" || contract.direction === "READ_WRITE"),
-);
+const methods = computed<CommandMethod[]>(() => toCommandMethods(device.value?.methods || []));
+const commandMethods = computed(() => methods.value);
 const telemetryVariables = computed<VariableResponse[]>(() =>
     device.value ? templateStore.variablesByTemplate[device.value.templateId] || [] : [],
 );
 const latestTelemetryByName = computed<Record<string, LiveEvent>>(() => {
     const variableNames = new Set(telemetryVariables.value.map((variable) => variable.name));
     return liveEvents.value.reduce<Record<string, LiveEvent>>((result, event) => {
-        const name = event.contract_name;
+        const name = event.variable_name;
         if (event.type !== "event" || !name || !variableNames.has(name) || result[name]) return result;
         result[name] = event;
         return result;
@@ -91,22 +89,22 @@ const cancelEdit = () => {
 };
 
 const initForms = () => {
-    commandContracts.value.forEach((contract) => {
-        if (!commandForms[contract.name]) commandForms[contract.name] = {};
-        contract.fields.forEach((field) => {
-            if (commandForms[contract.name][field.name] === undefined) {
-                commandForms[contract.name][field.name] = defaultValue(field.type);
+    commandMethods.value.forEach((method) => {
+        if (!commandForms[method.name]) commandForms[method.name] = {};
+        method.fields.forEach((field) => {
+            if (commandForms[method.name][field.name] === undefined) {
+                commandForms[method.name][field.name] = defaultValue(field.type);
             }
         });
     });
 };
 
-const payloadFor = (contract: CommandContract): unknown => {
-    if (contract.fields.length === 0) return {};
-    if (contract.fields.length === 1 && contract.fields[0].type === "JSON") {
-        return JSON.parse(String(commandForms[contract.name].payload || "{}"));
+const inputFor = (method: CommandMethod): unknown => {
+    if (method.fields.length === 0) return undefined;
+    if (method.fields.length === 1 && method.fields[0].type === "JSON") {
+        return JSON.parse(String(commandForms[method.name].input || "{}"));
     }
-    return { ...commandForms[contract.name] };
+    return commandForms[method.name].value;
 };
 
 const formatTelemetryValue = (event: LiveEvent | undefined): string => {
@@ -150,20 +148,21 @@ const connectSockets = () => {
         readableVariables.length > 0
             ? {
                   consumer_id: device.value.id,
-                  contracts: readableVariables,
+                  variables: readableVariables,
               }
             : undefined,
     );
 };
 
-const execute = (contract: CommandContract) => {
+const execute = (method: CommandMethod) => {
     commandError.value = "";
     try {
+        const input = inputFor(method);
         socket?.sendCommand({
             request_id: window.crypto.randomUUID(),
             consumer_id: consumerId.value,
-            contract_name: contract.name,
-            payload: payloadFor(contract),
+            method_name: method.name,
+            ...(input === undefined ? {} : { input }),
         });
     } catch (cause) {
         commandError.value = apiErrorMessage(cause);
@@ -179,7 +178,7 @@ const regenerateToken = async () => {
     }
 };
 
-watch(commandContracts, initForms, { immediate: true });
+watch(commandMethods, initForms, { immediate: true });
 watch(telemetryVariables, () => connectSockets());
 watch(
     device,
@@ -291,23 +290,23 @@ onBeforeUnmount(() => {
             </div>
         </section>
 
-        <!-- Commands (Contracts) -->
+        <!-- Commands (Methods) -->
         <section class="panel">
             <div class="panel-header">
                 <h2>Commands</h2>
                 <span v-if="commandError" class="status-badge error">{{ commandError }}</span>
             </div>
             <div class="panel-body stack">
-                <div v-if="commandContracts.length === 0" class="empty-state">No write contracts available for this template.</div>
+                <div v-if="commandMethods.length === 0" class="empty-state">No write methods available for this template.</div>
                 <div
                     v-else
                     style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem"
                 >
                     <form
-                        v-for="contract in commandContracts"
-                        :key="contract.id"
+                        v-for="method in commandMethods"
+                        :key="method.id"
                         class="command-card"
-                        @submit.prevent="execute(contract)"
+                        @submit.prevent="execute(method)"
                         style="
                             border: 1px solid var(--surface-border);
                             border-radius: 8px;
@@ -316,22 +315,22 @@ onBeforeUnmount(() => {
                         "
                     >
                         <div style="margin-bottom: 1rem">
-                            <h3 style="margin: 0; font-size: 1.1rem">{{ contract.name }}</h3>
+                            <h3 style="margin: 0; font-size: 1.1rem">{{ method.name }}</h3>
                             <p class="muted" style="margin: 0.25rem 0 0 0; font-size: 0.875rem">
-                                {{ contract.description || `${contract.input} → ${contract.output}` }}
+                                {{ method.description || method.input }}
                             </p>
                         </div>
                         <div class="command-fields stack" style="margin-bottom: 1rem">
-                            <label v-for="field in contract.fields" :key="field.name" class="field" style="margin: 0">
+                            <label v-for="field in method.fields" :key="field.name" class="field" style="margin: 0">
                                 <span style="font-size: 0.875rem; color: var(--text-muted)"
                                     >{{ field.name }} ({{ field.type }})</span
                                 >
                                 <input
                                     v-if="field.type === 'BOOLEAN'"
                                     type="checkbox"
-                                    :checked="Boolean(commandForms[contract.name][field.name])"
+                                    :checked="Boolean(commandForms[method.name][field.name])"
                                     @change="
-                                        commandForms[contract.name][field.name] = (
+                                        commandForms[method.name][field.name] = (
                                             $event.target as HTMLInputElement
                                         ).checked
                                     "
@@ -340,9 +339,9 @@ onBeforeUnmount(() => {
                                     v-else-if="field.type === 'INTEGER' || field.type === 'FLOAT'"
                                     class="input"
                                     type="number"
-                                    :value="Number(commandForms[contract.name][field.name])"
+                                    :value="Number(commandForms[method.name][field.name])"
                                     @input="
-                                        commandForms[contract.name][field.name] = Number(
+                                        commandForms[method.name][field.name] = Number(
                                             ($event.target as HTMLInputElement).value,
                                         )
                                     "
@@ -351,9 +350,9 @@ onBeforeUnmount(() => {
                                     v-else-if="field.type === 'JSON'"
                                     class="textarea mono"
                                     style="min-height: 80px"
-                                    :value="String(commandForms[contract.name][field.name])"
+                                    :value="String(commandForms[method.name][field.name])"
                                     @input="
-                                        commandForms[contract.name][field.name] = (
+                                        commandForms[method.name][field.name] = (
                                             $event.target as HTMLTextAreaElement
                                         ).value
                                     "
@@ -361,9 +360,9 @@ onBeforeUnmount(() => {
                                 <input
                                     v-else
                                     class="input"
-                                    :value="String(commandForms[contract.name][field.name])"
+                                    :value="String(commandForms[method.name][field.name])"
                                     @input="
-                                        commandForms[contract.name][field.name] = (
+                                        commandForms[method.name][field.name] = (
                                             $event.target as HTMLInputElement
                                         ).value
                                     "
@@ -452,7 +451,7 @@ onBeforeUnmount(() => {
                             <div>
                                 <strong style="display: block">{{ event.action }}</strong>
                                 <span class="muted" style="font-size: 0.875rem"
-                                    >Contract: {{ event.contract_name || "N/A" }}</span
+                                    >Resource: {{ event.method_name || event.variable_name || "N/A" }}</span
                                 >
                             </div>
                         </div>

@@ -1,4 +1,4 @@
-import type { ContractResponse, TemplateMetadata, TemplateResponse } from "@/domain/template/types";
+import type { MethodResponse, TemplateMetadata, TemplateResponse } from "@/domain/template/types";
 
 export type ConsumerRole = "OWNER" | "USER" | "VIEWER";
 
@@ -33,7 +33,7 @@ export interface DeviceView {
   state: "online" | "idle" | "warning" | "offline";
   lastEvent?: string;
   role: ConsumerRole;
-  contracts: ContractResponse[];
+  methods: MethodResponse[];
   template?: TemplateResponse;
 }
 
@@ -41,8 +41,10 @@ export interface LiveEvent {
   type: "event" | "success" | "error" | "subscription" | "pong";
   request_id?: string;
   consumer_id?: string;
-  contract_name?: string;
+  method_name?: string;
+  variable_name?: string;
   status?: string;
+  status_code?: number;
   code?: string;
   message?: string;
   payload?: unknown;

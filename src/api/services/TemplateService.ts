@@ -1,7 +1,7 @@
 import { domainClient } from "@/api/client";
 import type {
-  ContractResponse,
-  CreateContractPayload,
+  MethodResponse,
+  CreateMethodPayload,
   CreateTemplatePayload,
   CreateVariablePayload,
   IdResponse,
@@ -53,22 +53,22 @@ export class TemplateService {
     await domainClient.delete(`/variables/${variableId}`);
   }
 
-  static async getContracts(templateId: string): Promise<ContractResponse[]> {
-    const response = await domainClient.get<ContractResponse[]>(`/templates/${templateId}/contracts`);
+  static async getMethods(templateId: string): Promise<MethodResponse[]> {
+    const response = await domainClient.get<MethodResponse[]>(`/templates/${templateId}/methods`);
     return response.data;
   }
 
-  static async createContract(templateId: string, payload: CreateContractPayload): Promise<string> {
-    const response = await domainClient.post<IdResponse>(`/templates/${templateId}/contracts`, payload);
+  static async createMethod(templateId: string, payload: CreateMethodPayload): Promise<string> {
+    const response = await domainClient.post<IdResponse>(`/templates/${templateId}/methods`, payload);
     return response.data.id;
   }
 
-  static async updateContract(contractId: string, payload: CreateContractPayload): Promise<void> {
-    await domainClient.patch(`/contracts/${contractId}`, payload);
+  static async updateMethod(methodId: string, payload: CreateMethodPayload): Promise<void> {
+    await domainClient.patch(`/methods/${methodId}`, payload);
   }
 
-  static async deleteContract(contractId: string): Promise<void> {
-    await domainClient.delete(`/contracts/${contractId}`);
+  static async deleteMethod(methodId: string): Promise<void> {
+    await domainClient.delete(`/methods/${methodId}`);
   }
 
   static async grantAccess(templateId: string, clientId: string, role: string): Promise<void> {

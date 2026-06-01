@@ -22,7 +22,7 @@ const createTemplateId = ref("");
 const createDisplayName = ref("");
 const createError = ref("");
 
-const devices = computed(() => deviceStore.deviceViews(templateStore.templates, templateStore.contractsByTemplate));
+const devices = computed(() => deviceStore.deviceViews(templateStore.templates, templateStore.methodsByTemplate));
 const filteredDevices = computed(() => {
     const query = search.value.trim().toLowerCase();
     if (!query) return devices.value;

@@ -3,8 +3,8 @@ import { defineStore } from 'pinia';
 import { apiErrorMessage } from '@/api/client';
 import { TemplateService } from '@/api/services/TemplateService';
 import type {
-  ContractResponse,
-  CreateContractPayload,
+  MethodResponse,
+  CreateMethodPayload,
   CreateTemplatePayload,
   CreateVariablePayload,
   DomainType,
@@ -19,7 +19,7 @@ const DEFAULT_TYPE: DomainType = 'JSON';
 export const useTemplateStore = defineStore('template', () => {
   const templates = ref<TemplateResponse[]>([]);
   const variablesByTemplate = ref<Record<string, VariableResponse[]>>({});
-  const contractsByTemplate = ref<Record<string, ContractResponse[]>>({});
+  const methodsByTemplate = ref<Record<string, MethodResponse[]>>({});
   const isLoading = ref(false);
   const error = ref<string | null>(null);
 
@@ -41,12 +41,12 @@ export const useTemplateStore = defineStore('template', () => {
 
   const ensureTemplateDetail = async (templateId: string) => {
     if (!templateId) return;
-    const [variables, contracts] = await Promise.all([
+    const [variables, methods] = await Promise.all([
       TemplateService.getVariables(templateId),
-      TemplateService.getContracts(templateId),
+      TemplateService.getMethods(templateId),
     ]);
     variablesByTemplate.value[templateId] = variables;
-    contractsByTemplate.value[templateId] = contracts;
+    methodsByTemplate.value[templateId] = methods;
   };
 
   const createTemplate = async (payload: CreateTemplatePayload) => {
@@ -80,29 +80,29 @@ export const useTemplateStore = defineStore('template', () => {
     await ensureTemplateDetail(templateId);
   };
 
-  const createContract = async (templateId: string, payload: CreateContractPayload) => {
-    await TemplateService.createContract(templateId, payload);
+  const createMethod = async (templateId: string, payload: CreateMethodPayload) => {
+    await TemplateService.createMethod(templateId, payload);
     await ensureTemplateDetail(templateId);
   };
 
-  const updateContract = async (templateId: string, contractId: string, payload: CreateContractPayload) => {
-    await TemplateService.updateContract(contractId, payload);
+  const updateMethod = async (templateId: string, methodId: string, payload: CreateMethodPayload) => {
+    await TemplateService.updateMethod(methodId, payload);
     await ensureTemplateDetail(templateId);
   };
 
-  const deleteContract = async (templateId: string, contractId: string) => {
-    await TemplateService.deleteContract(contractId);
+  const deleteMethod = async (templateId: string, methodId: string) => {
+    await TemplateService.deleteMethod(methodId);
     await ensureTemplateDetail(templateId);
   };
 
   const emptyVariable = (): CreateVariablePayload => ({ name: '', type: DEFAULT_TYPE, description: '' });
-  const emptyContract = (): CreateContractPayload => ({ name: '', direction: 'READ_WRITE', input: DEFAULT_TYPE, output: DEFAULT_TYPE, description: '' });
+  const emptyMethod = (): CreateMethodPayload => ({ name: '', input: DEFAULT_TYPE, description: '' });
 
   return {
     templates,
     publicTemplates,
     variablesByTemplate,
-    contractsByTemplate,
+    methodsByTemplate,
     isLoading,
     error,
     fetchTemplates,
@@ -114,10 +114,10 @@ export const useTemplateStore = defineStore('template', () => {
     createVariable,
     updateVariable,
     deleteVariable,
-    createContract,
-    updateContract,
-    deleteContract,
+    createMethod,
+    updateMethod,
+    deleteMethod,
     emptyVariable,
-    emptyContract,
+    emptyMethod,
   };
 });

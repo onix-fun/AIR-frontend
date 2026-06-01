@@ -4,7 +4,7 @@ import { apiErrorMessage } from "@/api/client";
 import { DeviceService } from "@/api/services/DeviceService";
 import { AnalyticsService } from "@/api/services/AnalyticsService";
 import { parseTemplateInfo, templateDisplayName } from "@/domain";
-import type { ConsumerResponse, DeviceView, TemplateResponse, ContractResponse } from "@/domain";
+import type { ConsumerResponse, DeviceView, TemplateResponse, MethodResponse } from "@/domain";
 
 export const useDeviceStore = defineStore("device", () => {
   const consumers = ref<ConsumerResponse[]>([]);
@@ -57,11 +57,11 @@ export const useDeviceStore = defineStore("device", () => {
 
   const deviceViews = computed(
     () =>
-      (templates: TemplateResponse[], contractsByTemplate: Record<string, ContractResponse[]>): DeviceView[] =>
+      (templates: TemplateResponse[], methodsByTemplate: Record<string, MethodResponse[]>): DeviceView[] =>
         consumers.value.map((consumer) => {
           const template = templates.find((item) => item.id === consumer.templateId);
           const metadata = parseTemplateInfo(template?.info);
-          const contracts = contractsByTemplate[consumer.templateId] || [];
+          const methods = methodsByTemplate[consumer.templateId] || [];
           const lastEvent = lastEventsByConsumer.value[consumer.id];
           return {
             id: consumer.id,
@@ -73,7 +73,7 @@ export const useDeviceStore = defineStore("device", () => {
             state: lastEvent ? "online" : "idle",
             lastEvent,
             role: "OWNER",
-            contracts,
+            methods,
             template,
           };
         }),

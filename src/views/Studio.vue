@@ -47,7 +47,7 @@ import { useTemplateStore } from "@/infra/store";
 import { apiErrorMessage } from "@/api/client";
 import { AuthService } from "@/api/services/AuthService";
 import { TemplateService } from "@/api/services/TemplateService";
-import type { ContractDirection, CreateContractPayload, CreateVariablePayload, DomainType, TemplateState } from "@/domain";
+import type { CreateMethodPayload, CreateVariablePayload, DomainType, TemplateState } from "@/domain";
 
 const templateStore = useTemplateStore();
 
@@ -60,8 +60,8 @@ const createInfoEntries = ref<{ key: string; value: string }[]>([
 ]);
 const error = ref("");
 
-const typeOptions: DomainType[] = [
-    "STATUS",
+const methodTypeOptions: DomainType[] = [
+    "VOID",
     "TEXT",
     "INTEGER",
     "FLOAT",
@@ -71,13 +71,13 @@ const typeOptions: DomainType[] = [
     "DATE",
     "TIMESTAMP",
 ];
+const variableTypeOptions = methodTypeOptions.filter((type) => type !== "VOID");
 const stateOptions: TemplateState[] = ["DRAFT", "PUBLIC", "ARCHIVED"];
-const directionOptions: ContractDirection[] = ["READ", "WRITE", "READ_WRITE"];
 
 const variableDraft = reactive<CreateVariablePayload>(templateStore.emptyVariable());
-const contractDraft = reactive<CreateContractPayload>(templateStore.emptyContract());
+const methodDraft = reactive<CreateMethodPayload>(templateStore.emptyMethod());
 const variableEdits = reactive<Record<string, CreateVariablePayload>>({});
-const contractEdits = reactive<Record<string, CreateContractPayload>>({});
+const methodEdits = reactive<Record<string, CreateMethodPayload>>({});
 
 // Grant access modal state
 const showAccessModal = ref(false);
@@ -97,8 +97,8 @@ const selectedTemplate = computed(() =>
 const variables = computed(() =>
     selectedTemplateId.value ? templateStore.variablesByTemplate[selectedTemplateId.value] || [] : [],
 );
-const contracts = computed(() =>
-    selectedTemplateId.value ? templateStore.contractsByTemplate[selectedTemplateId.value] || [] : [],
+const methods = computed(() =>
+    selectedTemplateId.value ? templateStore.methodsByTemplate[selectedTemplateId.value] || [] : [],
 );
 
 const selectedTemplateInfoEntries = ref<{ key: string; value: string }[]>([]);
@@ -161,14 +161,12 @@ watch(
 );
 
 watch(
-    contracts,
+    methods,
     (items) => {
         items.forEach((item) => {
-            contractEdits[item.id] = {
+            methodEdits[item.id] = {
                 name: item.name,
-                direction: item.direction || "READ_WRITE",
                 input: item.input,
-                output: item.output,
                 description: item.description || "",
             };
         });
@@ -243,10 +241,10 @@ const createVariable = () =>
         Object.assign(variableDraft, templateStore.emptyVariable());
     });
 
-const createContract = () =>
+const createMethod = () =>
     run(async () => {
-        await templateStore.createContract(selectedTemplateId.value, contractDraft);
-        Object.assign(contractDraft, templateStore.emptyContract());
+        await templateStore.createMethod(selectedTemplateId.value, methodDraft);
+        Object.assign(methodDraft, templateStore.emptyMethod());
     });
 </script>
 
@@ -257,7 +255,7 @@ const createContract = () =>
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem">
                 <div>
                     <h2>Studio</h2>
-                    <span class="muted">Manage templates, variables, and contracts</span>
+                    <span class="muted">Manage templates, variables, and methods</span>
                 </div>
                 <div class="toolbar" style="display: flex; gap: 1rem">
                     <input
@@ -453,7 +451,7 @@ const createContract = () =>
                     <div v-for="variable in variables" :key="variable.id" class="edit-row">
                         <input v-model="variableEdits[variable.id].name" class="input" />
                         <select v-model="variableEdits[variable.id].type" class="select">
-                            <option v-for="type in typeOptions" :key="type" :value="type">{{ type }}</option>
+                            <option v-for="type in variableTypeOptions" :key="type" :value="type">{{ type }}</option>
                         </select>
                         <input
                             v-model="variableEdits[variable.id].description"
@@ -484,7 +482,7 @@ const createContract = () =>
                     <form class="edit-row" @submit.prevent="createVariable">
                         <input v-model="variableDraft.name" class="input" placeholder="Variable name" required />
                         <select v-model="variableDraft.type" class="select">
-                            <option v-for="type in typeOptions" :key="type" :value="type">{{ type }}</option>
+                            <option v-for="type in variableTypeOptions" :key="type" :value="type">{{ type }}</option>
                         </select>
                         <input v-model="variableDraft.description" class="input" placeholder="Description" />
                         <button class="btn btn-primary" type="submit">Add variable</button>
@@ -494,24 +492,16 @@ const createContract = () =>
 
             <section class="panel">
                 <div class="panel-header">
-                    <h2>Contracts</h2>
+                    <h2>Methods</h2>
                 </div>
                 <div class="panel-body stack">
-                    <div v-for="contract in contracts" :key="contract.id" class="edit-row contract-edit-row">
-                        <input v-model="contractEdits[contract.id].name" class="input" />
-                        <select v-model="contractEdits[contract.id].direction" class="select">
-                            <option v-for="direction in directionOptions" :key="direction" :value="direction">
-                                {{ direction }}
-                            </option>
-                        </select>
-                        <select v-model="contractEdits[contract.id].input" class="select">
-                            <option v-for="type in typeOptions" :key="type" :value="type">{{ type }}</option>
-                        </select>
-                        <select v-model="contractEdits[contract.id].output" class="select">
-                            <option v-for="type in typeOptions" :key="type" :value="type">{{ type }}</option>
+                    <div v-for="method in methods" :key="method.id" class="edit-row method-edit-row">
+                        <input v-model="methodEdits[method.id].name" class="input" />
+                        <select v-model="methodEdits[method.id].input" class="select">
+                            <option v-for="type in methodTypeOptions" :key="type" :value="type">{{ type }}</option>
                         </select>
                         <input
-                            v-model="contractEdits[contract.id].description"
+                            v-model="methodEdits[method.id].description"
                             class="input"
                             placeholder="Description"
                         />
@@ -519,10 +509,10 @@ const createContract = () =>
                             class="btn"
                             type="button"
                             @click="
-                                templateStore.updateContract(
+                                templateStore.updateMethod(
                                     selectedTemplate?.id || '',
-                                    contract.id,
-                                    contractEdits[contract.id],
+                                    method.id,
+                                    methodEdits[method.id],
                                 )
                             "
                         >
@@ -531,26 +521,18 @@ const createContract = () =>
                         <button
                             class="btn btn-danger"
                             type="button"
-                            @click="templateStore.deleteContract(selectedTemplate?.id || '', contract.id)"
+                            @click="templateStore.deleteMethod(selectedTemplate?.id || '', method.id)"
                         >
                             Delete
                         </button>
                     </div>
-                    <form class="edit-row contract-edit-row" @submit.prevent="createContract">
-                        <input v-model="contractDraft.name" class="input" placeholder="Contract name" required />
-                        <select v-model="contractDraft.direction" class="select">
-                            <option v-for="direction in directionOptions" :key="direction" :value="direction">
-                                {{ direction }}
-                            </option>
+                    <form class="edit-row method-edit-row" @submit.prevent="createMethod">
+                        <input v-model="methodDraft.name" class="input" placeholder="Method name" required />
+                        <select v-model="methodDraft.input" class="select">
+                            <option v-for="type in methodTypeOptions" :key="type" :value="type">{{ type }}</option>
                         </select>
-                        <select v-model="contractDraft.input" class="select">
-                            <option v-for="type in typeOptions" :key="type" :value="type">{{ type }}</option>
-                        </select>
-                        <select v-model="contractDraft.output" class="select">
-                            <option v-for="type in typeOptions" :key="type" :value="type">{{ type }}</option>
-                        </select>
-                        <input v-model="contractDraft.description" class="input" placeholder="Description" />
-                        <button class="btn btn-primary" type="submit">Add contract</button>
+                        <input v-model="methodDraft.description" class="input" placeholder="Description" />
+                        <button class="btn btn-primary" type="submit">Add method</button>
                     </form>
                 </div>
             </section>
